@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Profile Management</title>
+</head>
+<body>
+  <h2>Your Profile</h2>
+    <!-- kyc -->
+  <div id="kycStatus"></div>
+  <form id="profileForm">
+    <label>Full Name:<br>
+      <input type="text" id="full_name" required>
+    </label><br><br>
+    <label>Phone:<br>
+      <input type="text" id="phone">
+    </label><br><br>
+    <label>Address:<br>
+      <input type="text" id="address">
+    </label><br><br>
+    <button type="submit">Update Profile</button>
+    <br/> <br/> <a href="dashboard.html">Dashboard</a>
+  </form>
+  <br>
+  <a href="kyc.html">KYC Verification</a> 
+  <p id="message"></p>
+  
+<script>
+const token = localStorage.getItem('token');
+fetch('http://localhost/NovaTrust/Backend/profile.php', {
+  headers: { 'Authorization': 'Bearer ' + token }
+})
+.then(res => res.json())
+.then(data => {
+  if (data.kyc_status) {
+    let msg = `<strong>KYC Status:</strong> ${data.kyc_status.toUpperCase()}`;
+    if (data.kyc_status === 'rejected') {
+      msg += '<br><span style="color:red;">Please resubmit your KYC details.</span>';
+    } else if (data.kyc_status === 'pending') {
+      msg += '<br><span style="color:orange;">Your KYC is under review.</span>';
+    } else if (data.kyc_status === 'verified') {
+      msg += '<br><span style="color:green;">Your KYC is verified!</span>';
+    }
+    document.getElementById('kycStatus').innerHTML = msg;
+  }
+});
+</script>
+
+  <script>
+    const messageEl = document.getElementById('message');
+
+    // Fetch profile on load
+    fetch('http://localhost/NovaTrust/Backend/profile.php', {
+      method: 'GET',
+      headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) {
+        messageEl.textContent = data.error;
+        return;
+      }
+      document.getElementById('full_name').value = data.full_name || '';
+      document.getElementById('phone').value = data.phone || '';
+      document.getElementById('address').value = data.address || '';
+    });
+
+    // Update profile
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const full_name = document.getElementById('full_name').value;
+      const phone = document.getElementById('phone').value;
+      const address = document.getElementById('address').value;
+
+      const response = await fetch('http://localhost/NovaTrust/Backend/profile.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ full_name, phone, address })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        messageEl.style.color = 'green';
+        messageEl.textContent = data.message;
+      } else {
+        messageEl.style.color = 'red';
+        messageEl.textContent = data.error || 'Update failed';
+      }
+    });
+  </script>
+</body>
+</html>

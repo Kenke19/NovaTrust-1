@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>VTpass Bill Payments - NovaTrust Bank</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; }
+    label { display: block; margin-top: 10px; font-weight: bold; }
+    select, input { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+    button { margin-top: 15px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    #result, #elec_result { margin-top: 15px; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h2>VTpass Bill Payments</h2>
+
+  <label for="accountSelect">Select Account:</label>
+  <select id="accountSelect">
+    <option value="">Loading accounts...</option>
+  </select>
+
+  <h3>Buy Airtime / Data Bundle</h3>
+  <label for="network">Network:</label>
+  <select id="network">
+    <option value="">Select Network</option>
+    <option value="mtn">MTN</option>
+    <option value="airtel">Airtel</option>
+    <option value="glo">Glo</option>
+    <option value="9mobile">9mobile</option>
+  </select>
+
+  <label for="bundle">Data Bundle:</label>
+  <select id="bundle">
+    <option value="">Select Bundle</option>
+  </select>
+
+  <label for="phone">Phone Number:</label>
+  <input type="text" id="phone" placeholder="e.g. 08031234567" />
+
+  <button id="buyAirtimeBtn">Buy Airtime/Data</button>
+  <div id="result"></div>
+
+  <hr>
+
+  <h3>Pay Electricity Bill</h3>
+  <label for="disco">Electricity Provider (DISCO):</label>
+  <select id="disco">
+    <option value="">Select DISCO</option>
+    <option value="ikeja-electric">Ikeja Electric</option>
+    <option value="phcn-electric">PHCN</option>
+    <option value="eko-electric">Eko Electric</option>
+    <!-- Add more DISCOs as needed -->
+  </select>
+
+  <label for="meter_number">Meter Number:</label>
+  <input type="text" id="meter_number" placeholder="Meter Number" />
+
+  <label for="meter_type">Meter Type:</label>
+  <select id="meter_type">
+    <option value="">Select Meter Type</option>
+    <option value="prepaid">Prepaid</option>
+    <option value="postpaid">Postpaid</option>
+  </select>
+
+  <label for="elec_amount">Amount (₦):</label>
+  <input type="number" id="elec_amount" placeholder="Amount" min="1" />
+
+  <button id="payElectricityBtn">Pay Electricity</button>
+  <div id="elec_result"></div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('You must be logged in.');
+      window.location.href = 'login.html';
+    }
+
+    const accountSelect = document.getElementById('accountSelect');
+    const networkSelect = document.getElementById('network');
+    const bundleSelect = document.getElementById('bundle');
+    const resultDiv = document.getElementById('result');
+    const elecResultDiv = document.getElementById('elec_result');
+
+    let selectedAccountId = null;
+
+    // Fetch user accounts on page load
+    fetch('http://localhost/NovaTrust/Backend/account_overview.php', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.accounts && data.accounts.length > 0) {
+        accountSelect.innerHTML = '<option value="">Select Account</option>';
+        data.accounts.forEach(acc => {
+          const option = document.createElement('option');
+          option.value = acc.id;
+          option.textContent = `${acc.account_number} (${acc.account_type.toUpperCase()}) - ₦${parseFloat(acc.balance).toFixed(2)}`;
+          accountSelect.appendChild(option);
+        });
+      } else {
+        accountSelect.innerHTML = '<option value="">No accounts found</option>';
+      }
+    })
+    .catch(err => {
+      accountSelect.innerHTML = '<option value="">Failed to load accounts</option>';
+      console.error('Error loading accounts:', err);
+    });
+
+    accountSelect.addEventListener('change', () => {
+      selectedAccountId = accountSelect.value;
+    });
+
+    // Load data bundles when network changes
+    networkSelect.addEventListener('change', () => {
+      const network = networkSelect.value;
+      bundleSelect.innerHTML = '<option>Loading bundles...</option>';
+      if (!network) {
+        bundleSelect.innerHTML = '<option value="">Select Bundle</option>';
+        return;
+      }
+
+      fetch(`http://localhost/NovaTrust/Backend/get_variations.php?network=${network}`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.variations && data.variations.length > 0) {
+          bundleSelect.innerHTML = '<option value="">Select Bundle</option>';
+          data.variations.forEach(v => {
+            const option = document.createElement('option');
+            option.value = v.variation_code;
+            option.textContent = `${v.name} - ₦${v.variation_amount}`;
+            bundleSelect.appendChild(option);
+          });
+        } else {
+          bundleSelect.innerHTML = '<option value="">No bundles available</option>';
+        }
+      })
+      .catch(err => {
+        bundleSelect.innerHTML = '<option value="">Failed to load bundles</option>';
+        console.error('Error loading bundles:', err);
+      });
+    });
+
+    // Buy Airtime/Data button click
+    document.getElementById('buyAirtimeBtn').addEventListener('click', () => {
+      if (!selectedAccountId) {
+        alert('Please select an account.');
+        return;
+      }
+      const network = networkSelect.value;
+      const bundleCode = bundleSelect.value;
+      const phone = document.getElementById('phone').value.trim();
+
+      if (!network) {
+        alert('Please select a network.');
+        return;
+      }
+      if (!bundleCode) {
+        alert('Please select a data bundle.');
+        return;
+      }
+      if (!phone.match(/^0\d{10}$/)) {
+        alert('Enter a valid Nigerian phone number (e.g. 08031234567).');
+        return;
+      }
+
+      // Extract amount from selected bundle text
+      const selectedOption = bundleSelect.selectedOptions[0];
+      const amountMatch = selectedOption.textContent.match(/₦(\d+)/);
+      const amount = amountMatch ? parseFloat(amountMatch[1]) : 0;
+
+      if (amount <= 0) {
+        alert('Invalid amount.');
+        return;
+      }
+
+      resultDiv.textContent = 'Processing...';
+
+      fetch('http://localhost/NovaTrust/Backend/airtime_purchase.php', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          network: network,
+          phone: phone,
+          amount: amount,
+          variation_code: bundleCode,
+          account_id: selectedAccountId
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          resultDiv.style.color = 'red';
+          resultDiv.textContent = 'Error: ' + data.error;
+        } else {
+          resultDiv.style.color = 'green';
+          resultDiv.textContent = data.message || 'Purchase successful!';
+        }
+      })
+      .catch(err => {
+        resultDiv.style.color = 'red';
+        resultDiv.textContent = 'Network error: ' + err.message;
+      });
+    });
+
+    // Pay Electricity button click
+    document.getElementById('payElectricityBtn').addEventListener('click', () => {
+      if (!selectedAccountId) {
+        alert('Please select an account.');
+        return;
+      }
+      const disco = document.getElementById('disco').value;
+      const meter_number = document.getElementById('meter_number').value.trim();
+      const meter_type = document.getElementById('meter_type').value;
+      const amount = parseFloat(document.getElementById('elec_amount').value);
+
+      if (!disco) {
+        alert('Please select an electricity provider.');
+        return;
+      }
+      if (!meter_number) {
+        alert('Please enter a meter number.');
+        return;
+      }
+      if (!meter_type) {
+        alert('Please select meter type.');
+        return;
+      }
+      if (isNaN(amount) || amount <= 0) {
+        alert('Please enter a valid amount.');
+        return;
+      }
+
+      elecResultDiv.textContent = 'Processing...';
+
+      fetch('http://localhost/NovaTrust/Backend/electricity_payment.php', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          disco: disco,
+          meter_number: meter_number,
+          meter_type: meter_type,
+          amount: amount,
+          account_id: selectedAccountId
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          elecResultDiv.style.color = 'red';
+          elecResultDiv.textContent = 'Error: ' + data.error;
+        } else {
+          elecResultDiv.style.color = 'green';
+          elecResultDiv.textContent = data.message || 'Payment successful!';
+        }
+      })
+      .catch(err => {
+        elecResultDiv.style.color = 'red';
+        elecResultDiv.textContent = 'Network error: ' + err.message;
+      });
+    });
+  </script>
+</body>
+</html>

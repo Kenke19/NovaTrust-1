@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Transaction History</title>
+  <style>
+    .tx-card { border: 1px solid #ccc; border-radius: 6px; padding: 12px; margin-bottom: 12px; background: #f9f9f9; }
+  </style>
+</head>
+<body>
+  <h2>Transaction History</h2>
+  <div id="txHistory">Loading...</div>
+  <br>
+  <a href="account_overview.html">Back to Account Overview</a>
+  <script>
+    const token = localStorage.getItem('token');
+    const params = new URLSearchParams(window.location.search);
+    const account_id = params.get('account_id');
+    if (!token || !account_id) {
+      window.location.href = 'login.html';
+    } else {
+      fetch('http://localhost/NovaTrust/Backend/transaction_history.php?account_id=' + account_id, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(res => res.json())
+      .then(data => {
+        const div = document.getElementById('txHistory');
+        if (data.transactions && data.transactions.length) {
+          div.innerHTML = data.transactions.map(tx => `
+            <div class="tx-card">
+              <strong>${tx.type.toUpperCase()}</strong> $${parseFloat(tx.amount).toFixed(2)}<br>
+              ${tx.description || ''} ${tx.related_account ? '(Related: ' + tx.related_account + ')' : ''}
+              <br>${tx.created_at}
+              ${tx.receipt_url ? `<br><a href="${tx.receipt_url}" target="_blank">View Receipt</a>` : ''}
+            </div>
+          `).join('');
+        } else if (data.error) {
+          div.textContent = 'Error: ' + data.error;
+        } else {
+          div.textContent = 'No transactions found.';
+        }
+      })
+      .catch(err => {
+        document.getElementById('txHistory').textContent = 'Network error: ' + err.message;
+      });
+    }
+  </script>
+</body>
+</html>

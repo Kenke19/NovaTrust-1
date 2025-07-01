@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>KYC Verification</title>
+</head>
+<body>
+  <h2>KYC Verification</h2>
+  <form id="kycForm" enctype="multipart/form-data">
+    <label>Full Name: <input type="text" name="kyc_full_name" required></label><br>
+    <label>Date of Birth: <input type="date" name="kyc_dob" required></label><br>
+    <label>Address: <input type="text" name="kyc_address" required></label><br>
+    <label>ID Type:
+      <select name="kyc_id_type" required>
+        <option value="passport">Passport</option>
+        <option value="driver_license">Driver's License</option>
+        <option value="national_id">National ID</option>
+      </select>
+    </label><br>
+    <label>ID Number: <input type="text" name="kyc_id_number" required></label><br>
+    <label>ID Document: <input type="file" name="kyc_id_document" accept="image/*,application/pdf" required></label><br>
+    <button type="submit">Submit KYC</button>
+  </form>
+  <a href="dashboard.html">Back to Dashboard</a>
+  <p id="kycMsg"></p>
+  <script>
+    const token = localStorage.getItem('token');
+    document.getElementById('kycForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      fetch('http://localhost/NovaTrust/Backend/kyc_submit.php', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('kycMsg').textContent = data.message || data.error;
+        document.getElementById('kycMsg').style.color = data.success ? 'green' : 'red';
+      });
+    });
+  </script>
+</body>
+</html>

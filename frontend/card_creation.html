@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Request Physical Card</title>
+  <style>
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 300px;
+      padding: 6px;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Request Physical Card</h2>
+  <div>
+    <label for="accountSelect">Select Account:</label>
+    <select id="accountSelect" required></select>
+  </div>
+
+  <form id="addressForm">
+    <label for="street">Street Address:</label>
+    <input type="text" id="street" name="street" required placeholder="123 Main St" />
+
+    <label for="city">City:</label>
+    <input type="text" id="city" name="city" required placeholder="Lagos" />
+
+    <label for="state">State:</label>
+    <input type="text" id="state" name="state" required placeholder="Lagos State" />
+
+    <label for="postalCode">Postal Code:</label>
+    <input type="text" id="postalCode" name="postalCode" required placeholder="100001" />
+
+    <label for="country">Country:</label>
+    <select id="country" name="country" required>
+      <option value="">Select Country</option>
+      <option value="Nigeria">Nigeria</option>
+      <option value="Ghana">Ghana</option>
+      <option value="Kenya">Kenya</option>
+      <option value="South Africa">South Africa</option>
+      <option value="Other">Other</option>
+    </select>
+  </form>
+
+  <button id="requestCardBtn">Request Card</button>
+  <div id="statusMessage"></div>
+  <a href="dashboard.html">Back to Dashboard</a>
+  <hr>
+  <h3>Your Physical Card Requests</h3>
+  <div id="requestsContainer"></div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = 'login.html';
+
+    // Load accounts for dropdown
+    fetch('http://localhost/NovaTrust/Backend/account_overview.php', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(res => res.json())
+    .then(data => {
+      const select = document.getElementById('accountSelect');
+      if (data.accounts && data.accounts.length) {
+        data.accounts.forEach(acct => {
+          const opt = document.createElement('option');
+          opt.value = acct.id;
+          opt.textContent = acct.account_number + ' (' + acct.account_type + ')';
+          select.appendChild(opt);
+        });
+      }
+    });
+
+    // Request physical card
+    document.getElementById('requestCardBtn').onclick = () => {
+      const account_id = document.getElementById('accountSelect').value;
+
+      // Collect full address from form fields
+      const street = document.getElementById('street').value.trim();
+      const city = document.getElementById('city').value.trim();
+      const state = document.getElementById('state').value.trim();
+      const postalCode = document.getElementById('postalCode').value.trim();
+      const country = document.getElementById('country').value;
+
+      if (!account_id) {
+        alert('Please select an account.');
+        return;
+      }
+      if (!street || !city || !state || !postalCode || !country) {
+        alert('Please fill in all address fields.');
+        return;
+      }
+
+      // Combine the address into a single string or send as an object
+      const delivery_address = `${street}, ${city}, ${state}, ${postalCode}, ${country}`;
+
+      fetch('http://localhost/NovaTrust/Backend/card_creation.php', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ account_id, street_address: street, city, state, postal_code: postalCode, country })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('statusMessage').textContent = data.message || data.error;
+        loadRequests();
+      });
+    };
+
+    // Load card requests
+    function loadRequests() {
+  fetch('http://localhost/NovaTrust/Backend/card_creation.php', {
+    headers: { 'Authorization': 'Bearer ' + token }
+  })
+  .then(res => res.json())
+  .then(data => {
+    const div = document.getElementById('requestsContainer');
+    if (data.requests && data.requests.length) {
+      div.innerHTML = data.requests.map(r => {
+        const fullAddress = `${r.street_address}, ${r.city}, ${r.state}, ${r.postal_code}, ${r.country}`;
+        return `
+          <div>
+            <strong>${r.account_number} (${r.account_type})</strong><br>
+            Address: ${fullAddress}<br>
+            Status: ${r.status}<br>
+            Requested: ${new Date(r.created_at).toLocaleDateString()}
+          </div>
+          <hr>
+        `;
+      }).join('');
+    } else {
+      div.innerHTML = 'No physical card requests found.';
+    }
+  });
+}
+
+
+    loadRequests();
+  </script>
+</body>
+</html>

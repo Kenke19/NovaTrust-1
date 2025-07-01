@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard - NovaTrust Bank</title>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>NovaTrust Bank</h1>
+      <button id="logoutBtn">Logout</button>
+    </div>
+    <section>
+      <div id="userInfo">Loading user info ...</div>
+    </section>
+    <div class="card">
+      <h2>Welcome to your Dashboard</h2>
+      <div class="actions">
+        <a href="internal_transfer.html">Internal Transfer</a>
+        <a href="external_transfer.html">External Transfer</a>
+        <a href="transaction_history.html">Transaction History</a>
+        <a href="profile.html">Profile</a>
+        <a href="account_overview.html">Account overview</a>
+        <a href="virtual_card.html">Virtual Cards</a>
+        <a href="card_creation.html">Request Physical Card</a>
+        <a href="bill_payment.html">Bill Payments</a>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Your Accounts</h2>
+      <div id="accounts-list" class="loading">
+        <div class="spinner"></div>
+        <p>Loading accounts...</p>
+      </div>
+    </div>
+  </div>
+  <script src="common.js"></script>
+  <script>
+    // Example: Load accounts for dashboard
+    window.addEventListener('DOMContentLoaded', () => {
+      loadAccounts('accounts-list');
+      loadUserInfo('userInfo');
+    });
+  </script>
+</body>
+</html>

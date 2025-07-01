@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>NovaTrust Bank - Request Password Reset</title>
+</head>
+<body>
+  <h2>Request Password Reset</h2>
+
+  <form id="requestResetForm">
+    <label>
+      Enter your email:<br />
+      <input type="email" id="email" required />
+    </label>
+    <br /><br />
+    <button type="submit">Send Reset Link</button>
+  </form>
+
+  <p id="message" style="color: red;"></p>
+
+  <script>
+    document.getElementById('requestResetForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value.trim();
+      const messageEl = document.getElementById('message');
+      messageEl.textContent = '';
+      messageEl.style.color = 'red';
+
+      try {
+        const response = await fetch('http://localhost/NovaTrust/Backend/request_password_reset.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          messageEl.style.color = 'green';
+          messageEl.textContent = data.message || 'Reset link sent! Check your email.';
+        } else {
+          messageEl.textContent = data.error || 'Failed to send reset link.';
+        }
+      } catch (error) {
+        messageEl.textContent = 'Network error: ' + error.message;
+      }
+    });
+  </script>
+</body>
+</html>

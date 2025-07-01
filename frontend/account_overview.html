@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Account Overview - NovaTrust Bank</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    .account-card {
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 16px;
+      background: #f9f9f9;
+      max-width: 400px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Your Account Overview</h2>
+  <h3>Open a New Account</h3>
+<form id="createAccountForm">
+  <label>
+    Account Type:
+    <select id="account_type" required>
+      <option value="checking">Checking</option>
+      <option value="savings">Savings</option>
+    </select>
+  </label>
+  <label>
+    Initial Deposit:
+    <input type="number" id="initial_balance" min="0" step="0.01" value="0" required>
+  </label>
+  <button type="submit">Create Account</button>
+</form>
+<p id="createAccountMsg"></p>
+  <div id="accountsOverview">Loading accounts...</div>
+  <br>
+  <a href="dashboard.html">Back to Dashboard</a>
+
+  <script>
+    const token = localStorage.getItem('token');
+    const div = document.getElementById('accountsOverview');
+
+    if (!token) {
+      window.location.href = 'login.html';
+    } else {
+      fetch('http://localhost/NovaTrust/Backend/account_overview.php', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.accounts && data.accounts.length) {
+            div.innerHTML = data.accounts.map(acc => `
+                <div class="account-card">
+                    <strong>${acc.account_type.toUpperCase()}</strong><br>
+                    Account #: ${acc.account_number}<br>
+                    Balance: &#8358; ${parseFloat(acc.balance).toFixed(2)}<br>
+                    Opened: ${acc.created_at}<br>
+                    <a href="transaction_history.html?account_id=${acc.id}">View Transaction History</a>
+                </div>
+            `).join('');
+        } else {
+          div.textContent = 'No accounts found.';
+        }
+      })
+      .catch(err => {
+        div.textContent = 'Network error: ' + err.message;
+      });
+    }
+    //create account 
+    const createForm = document.getElementById('createAccountForm');
+const createMsg = document.getElementById('createAccountMsg');
+
+createForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const account_type = document.getElementById('account_type').value;
+  const initial_balance = document.getElementById('initial_balance').value;
+  createMsg.textContent = '';
+
+  try {
+    const response = await fetch('http://localhost/NovaTrust/Backend/create_account.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify({ account_type, initial_balance })
+    });
+    const data = await response.json();
+    if (response.ok) {
+      createMsg.style.color = 'green';
+      createMsg.textContent = data.message + ' (Account #: ' + data.account_number + ')';
+      location.reload();
+    } else {
+      createMsg.style.color = 'red';
+      createMsg.textContent = data.error || 'Failed to create account';
+    }
+  } catch (err) {
+    createMsg.style.color = 'red';
+    createMsg.textContent = 'Network error: ' + err.message;
+  }
+});
+  </script>
+</body>
+</html>

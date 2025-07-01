@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Virtual Cards</title>
+</head>
+<body>
+  <h2>Virtual Cards</h2>
+  <div>
+    <label for="accountSelect">Select Account:</label>
+    <select id="accountSelect"></select>
+    <button id="createCardBtn">Create Virtual Card</button>
+  </div>
+  <div id="statusMessage"></div>
+  <a href="dashboard.html">Back to Dashboard</a>
+  <hr>
+  <div id="cardsContainer"></div>
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = 'login.html';
+
+    // Load accounts for dropdown
+    fetch('http://localhost/NovaTrust/Backend/account_overview.php', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(res => res.json())
+    .then(data => {
+      const select = document.getElementById('accountSelect');
+      if (data.accounts && data.accounts.length) {
+        data.accounts.forEach(acct => {
+          const opt = document.createElement('option');
+          opt.value = acct.id;
+          opt.textContent = acct.account_number + ' (' + acct.account_type + ')';
+          select.appendChild(opt);
+        });
+      }
+    });
+
+    // Create card
+    document.getElementById('createCardBtn').onclick = () => {
+      const account_id = document.getElementById('accountSelect').value;
+      const pin = prompt("Set a 4-digit PIN for this card:");
+      if (!pin || pin.length < 4) {
+        alert("PIN must be at least 4 digits.");
+        return; 
+      }
+      fetch('http://localhost/NovaTrust/Backend/virtual_card.php', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ account_id, pin })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('statusMessage').textContent = data.message || data.error;
+        loadCards();
+      });
+    };
+
+    // Load cards
+    function loadCards() {
+      fetch('http://localhost/NovaTrust/Backend/virtual_card.php', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(res => res.json())
+      .then(data => {
+        const div = document.getElementById('cardsContainer');
+        if (data.cards && data.cards.length) {
+          div.innerHTML = data.cards.map(card => `
+            <div>
+              <strong>${card.account_number} (${card.account_type})</strong><br>
+              Card: ${card.card_number}<br>
+              Balance: ₦${parseFloat(card.account_balance).toLocaleString('en-NG', { minimumFractionDigits: 2 })}<br>
+              Expires: ${card.expiry_date}<br>
+              Status: ${card.status}<br>
+              Created: ${new Date(card.created_at).toLocaleDateString()}<br>
+              <button onclick="viewCardDetails(${card.id})">View Card Details</button>
+            </div>
+            <hr>
+          `).join('');
+        } else {
+          div.innerHTML = 'No virtual cards found.';
+        }
+      });
+    }
+
+    // View card details
+    window.viewCardDetails = function(cardId) {
+      const pin = prompt("Enter your card PIN:");
+      if (!pin) return;
+      fetch('http://localhost/NovaTrust/Backend/view_card_details.php', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ card_id: cardId, pin })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          alert(data.error);
+        } else {
+          alert(`Card Number: ${data.card_number}\nExpiry: ${data.expiry_date}\nCVV: ${data.cvv}`);
+        }
+      });
+    }
+
+    loadCards();
+  </script>
+</body>
+</html>

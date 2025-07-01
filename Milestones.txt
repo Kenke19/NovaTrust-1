@@ -1,0 +1,36 @@
+-login  //
+-logout  //
+-register  //
+-password reset  //
+-last login //
+-profile management //
+-account overview //
+-account creation //
+-transaction history //
+-fund transfer between users //
+-external transfers //
+-kyc verification //
+-card funding //
+-virtual card creation //
+-deposit/withdraw //
+- -bill payments
+-notifications 
+-account statements
+-support/ticketing
+-two-factor authentication
+-admin dashboard
+-account actions 
+
+//replace for deployment
+$recipient_payload = [
+    "type" => "nuban",
+    "name" => $userData['name'] ?? "Recipient",
+    "account_number" => $account_number,
+    "bank_code" => $bank_code,
+    "currency" => "NGN"
+];
+
+API KEY - 230453f425f40a8cbbc1ecd0aa50f78b
+
+PUBLIC KEY - PK_509646651a3cc02032822ed2e988bdc8c6819734927
+SECRET KEY - SK_4395b7f059af9eb9ba273be6c1b7461b91068d2c519

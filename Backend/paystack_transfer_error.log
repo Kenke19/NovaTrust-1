@@ -1,0 +1,1 @@
+{"status":false,"message":"You cannot initiate third party payouts as a starter business","meta":{"nextStep":"You'll need to upgrade your business to a Registered Business."},"type":"api_error","code":"transfer_unavailable"}

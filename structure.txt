@@ -1,0 +1,37 @@
+/NovaTrust
+    /Backend
+        /PHPMailer
+        -account_overview.php
+        -config.php
+        -create_account.php
+        -external_transfer.php
+        -fund_transfer.php
+        -kyc_submit.php 
+        -jwt.php 
+        -login.php 
+        -profile.php
+        -paystack_verify.php 
+        -register.php 
+        -request_password_reset.php 
+        -reset_password.php
+        -mailer.php
+        -transaction_history.php
+        -verify_account.php
+        -virtual_card.php
+    /frontend
+        -account_overview.html
+        -common.js
+        -dashboard.html
+        -external_transfer.html
+        -internal_transfer.html
+        -external_transfer.js
+        -internal_transfer.js
+        -kyc.html
+        -login.html
+        -profile.html
+        -register.html
+        -request-reset.html
+        -reset-password.html
+        transaction_history.html
+        -virtual_card.html
+        
