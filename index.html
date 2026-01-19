@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NovaTrust Bank - Login</title>
+</head>
+<body>
+  <h2>Login to NovaTrust Bank</h2>
+
+  <form id="loginForm">
+    <label>
+      Username or Email:<br />
+      <input type="text" id="username" required />
+    </label>
+    <br /><br />
+    <label>
+      Password:<br />
+      <input type="password" id="password" required />
+    </label>
+    <br /><br />
+    <button type="submit">Login</button>
+    <p>New user? <a href="register.html">Register here</a> </p>
+  </form>
+
+  <p id="message" style="color: red;"></p>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      // Clear previous message
+      const messageEl = document.getElementById('message');
+      messageEl.textContent = '';
+
+      try {
+        const response = await fetch('http://localhost/NovaTrust/Backend/login.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            localStorage.setItem('token', data.token);
+            messageEl.style.color = 'green';
+            messageEl.textContent = 'Login successful!';
+            window.location.href = 'http://localhost/NovaTrust/frontend/dashboard.html';
+        } else {
+          messageEl.style.color = 'red';
+          messageEl.textContent = data.error || 'Login failed';
+        }
+      } catch (error) {
+        messageEl.style.color = 'red';
+        messageEl.textContent = 'Network error: ' + error.message;
+      }
+    });
+  </script>
+</body>
+</html>
